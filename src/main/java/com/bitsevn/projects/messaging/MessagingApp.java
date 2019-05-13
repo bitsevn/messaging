@@ -22,42 +22,30 @@ public class MessagingApp {
 
     public static void main(String[] args) {
 
-        final int FIRST_QUEUE_CAPACITY = 1000;
-        final int AB_QUEUE_CAPACITY = 300;
-        final int CD_QUEUE_CAPACITY = 300;
-        final int RESULT_QUEUE_CAPACITY = 1000;
-        final int STREAMS_PER_STREAM_GROUP = 1000;
-        final int MAX_THREADS_PER_CONSUMER = 10;
+        final int QUEUE_CAPACITY = 1000;
+        final int STREAMS = 1000;
+        final int MAX_WORKERS = Runtime.getRuntime().availableProcessors();
 
         List<String> STREAM_GROUPS = Arrays.asList("A", "B", "C", "D");
         // shuffle the list to produce random order or stream generation
         // Collections.shuffle(streamGroups);
 
         new MessagingApp().run(
-                FIRST_QUEUE_CAPACITY,
-                AB_QUEUE_CAPACITY,
-                CD_QUEUE_CAPACITY,
-                RESULT_QUEUE_CAPACITY,
-                STREAMS_PER_STREAM_GROUP,
-                MAX_THREADS_PER_CONSUMER,
+                QUEUE_CAPACITY,
+                STREAMS,
+                MAX_WORKERS,
                 STREAM_GROUPS);
 
 
     }
 
     public void run(
-            final int first_queue_capacity,
-            final int ab_queue_capacity,
-            final int cd_queue_capacity,
-            final int result_queue_capacity,
+            final int queue_capacity,
             final int streams_per_stream_group,
             int max_threads_per_consumer,
             final List<String> stream_groups) {
         runAndAssert(
-                first_queue_capacity,
-                ab_queue_capacity,
-                cd_queue_capacity,
-                result_queue_capacity,
+                queue_capacity,
                 streams_per_stream_group,
                 max_threads_per_consumer,
                 stream_groups,
@@ -68,32 +56,26 @@ public class MessagingApp {
      * Using ArrayBlockingQueue so that we can specify data structure capacity. This uses array implementation
      * under the hood, that makes it memory efficient and cache-friendly for modern processors
      *
-     * @param first_queue_capacity - max capacity of the first level queue where stream producers will send messages
-     * @param ab_queue_capacity - max capacity of read queue for A/B streams
-     * @param cd_queue_capacity - max capacity of read queue for C/D streams
-     * @param result_queue_capacity - max capacity of result queue
+     * @param queue_capacity - max capacity of the first level queue where stream producers will send messages
      * @param streams_per_stream_group - no. of streams to be produced per stream group
      * @param max_threads_per_consumer - no. of concurrent threads to be used in executor service per consumer
      * @param stream_groups - list of stream groups
      */
     public void runAndAssert(
-            final int first_queue_capacity,
-            final int ab_queue_capacity,
-            final int cd_queue_capacity,
-            final int result_queue_capacity,
+            final int queue_capacity,
             final int streams_per_stream_group,
             int max_threads_per_consumer,
             final List<String> stream_groups,
             final boolean assertions) {
 
         // stream producers will write to this queue
-        BlockingQueue<String> readQueueAll = new ArrayBlockingQueue<>(first_queue_capacity);
+        BlockingQueue<String> readQueueAll = new ArrayBlockingQueue<>(queue_capacity);
 
         // consumer of A/B streams will read this queue and this queue will be written by {@link DataStreamDispatcher}
-        BlockingQueue<String> readQueueAB = new ArrayBlockingQueue<>(ab_queue_capacity);
+        BlockingQueue<String> readQueueAB = new ArrayBlockingQueue<>(queue_capacity);
 
         // consumer of C/D streams will read this queue and this queue will be written by {@link DataStreamDispatcher}
-        BlockingQueue<String> readQueueCD = new ArrayBlockingQueue<>(cd_queue_capacity);
+        BlockingQueue<String> readQueueCD = new ArrayBlockingQueue<>(queue_capacity);
 
         /**
          * results of stream consumers will be written to this queue.
@@ -102,7 +84,7 @@ public class MessagingApp {
          * Also, if one stream gets processed before other stream even when it arrived later, will also maintain the order
          * as Future will wait on unfinished streams!
          */
-        BlockingQueue<Future<String>> resultQueue = new ArrayBlockingQueue<>(result_queue_capacity);
+        BlockingQueue<Future<String>> resultQueue = new ArrayBlockingQueue<>(queue_capacity);
 
         /**
          * START - ASSERTION

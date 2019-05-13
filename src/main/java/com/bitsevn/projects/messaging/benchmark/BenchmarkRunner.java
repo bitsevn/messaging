@@ -17,20 +17,18 @@ public class BenchmarkRunner {
     @State(Scope.Benchmark)
     public static class ExecutionPlan {
 
-        // @Param({ "100", "1000", "10000", "100000", "1000000", "10000000", "50000000" })
-        @Param({"1000", "10000", "100000", "1000000", "10000000"})
-        public String streamsPerStreamGroup;
+        @Param({ "1024", "4096", "32768" })
+        public String BUFFER_SIZE;
 
-        // @Param({ "10", "100", "1000", "10000", "100000", "1000000", "50000000" })
-        @Param({"1000", "10000", "100000", "1000000"})
-        public String queueCapacity;
+        @Param({ "100", "200", "300", "500", "1000" })
+        public String STREAMS;
 
-        @Param({"8", "16", "32"})
-        public String maxThreads;
+        @Param({ "4", "8", "16", "32" })
+        public int WORKER_THREADS;
+
+        public List<String> STREAM_GROUPS = Arrays.asList("A", "B", "C", "D");
 
         public MessagingApp messagingApp;
-
-        private static final List<String> STREAM_GROUPS = Arrays.asList("A", "B", "C", "D");
 
         @Setup(Level.Invocation)
         public void setup() {
@@ -39,17 +37,15 @@ public class BenchmarkRunner {
     }
 
     @Benchmark
-    @Fork(value = 5, warmups = 2, jvmArgsAppend = { "-Xms128M", "-Xmx2G" })
-    @Measurement(iterations = 5)
+    @Fork(value = 1, warmups = 1, jvmArgsAppend = { "-Xms128M", "-Xmx2G" })
+    @Measurement(iterations = 2)
+    @Warmup(iterations = 3)
     @BenchmarkMode(Mode.Throughput)
     public void benchmarkThroughput(ExecutionPlan plan) {
         plan.messagingApp.run(
-                Integer.valueOf(plan.queueCapacity),
-                Integer.valueOf(plan.queueCapacity),
-                Integer.valueOf(plan.queueCapacity),
-                Integer.valueOf(plan.queueCapacity),
-                Integer.valueOf(plan.streamsPerStreamGroup),
-                Integer.valueOf(plan.maxThreads),
+                Integer.valueOf(plan.BUFFER_SIZE),
+                Integer.valueOf(plan.STREAMS),
+                Integer.valueOf(plan.WORKER_THREADS),
                 plan.STREAM_GROUPS);
     }
 }
