@@ -16,39 +16,35 @@ public class BenchmarkRunner {
     @State(Scope.Benchmark)
     public static class ExecutionPlan {
 
-        // @Param({ "100", "1000", "10000", "100000", "1000000", "10000000", "50000000" })
-        @Param({"1000", "10000", "100000", "1000000", "10000000"})
-        public String streamsPerStreamGroup;
+        @Param({ "1024", "4096", "32768" })
+        public String RING_SIZE;
 
-        // @Param({ "10", "100", "1000", "10000", "100000", "1000000", "50000000" })
-        @Param({"1000", "10000", "100000", "1000000"})
-        public String queueCapacity;
+        @Param({ "100", "1000", "10000", "100000" })
+        public String EVENTS_PER_PRODUCER;
 
-        @Param({"8", "16", "32"})
-        public String maxThreads;
+        @Param({ "8", "16", "32" })
+        public int WORKERS;
 
-        public MessagingApp messagingApp;
+        public List<String> PRODUCERS = Arrays.asList("A:AB", "B:AB", "C:CD", "D:CD");
 
-        private static final List<String> STREAM_GROUPS = Arrays.asList("A", "B", "C", "D");
+        public QueueServer queueServer;
 
         @Setup(Level.Invocation)
-        public void setup() {
-            messagingApp = new MessagingApp();
+        public void setUp() {
+            queueServer = new QueueServer();
         }
     }
 
     @Benchmark
-    @Fork(value = 5, warmups = 2, jvmArgsAppend = { "-Xms512M", "-Xmx2G" })
-    @Measurement(iterations = 5)
+    @Fork(value = 1, warmups = 1, jvmArgsAppend = { "-Xms128M", "-Xmx2G" })
+    @Measurement(iterations = 2)
+    @Warmup(iterations = 3)
     @BenchmarkMode(Mode.Throughput)
-    public void benchmark_throughput(ExecutionPlan plan) {
-        plan.messagingApp.run(
-                Integer.valueOf(plan.queueCapacity),
-                Integer.valueOf(plan.queueCapacity),
-                Integer.valueOf(plan.queueCapacity),
-                Integer.valueOf(plan.queueCapacity),
-                Integer.valueOf(plan.streamsPerStreamGroup),
-                Integer.valueOf(plan.maxThreads),
-                plan.STREAM_GROUPS);
+    public void benchmarkThroughput(ExecutionPlan plan) {
+        plan.queueServer.start(
+                Integer.valueOf(plan.RING_SIZE),
+                Integer.valueOf(plan.EVENTS_PER_PRODUCER),
+                Integer.valueOf(plan.WORKERS),
+                plan.PRODUCERS);
     }
 }
