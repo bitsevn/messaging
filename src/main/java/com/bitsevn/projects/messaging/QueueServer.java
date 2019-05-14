@@ -8,10 +8,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class QueueServer {
 
     private boolean debugEnabled = true;
-    private ProduceCallback produceCallback;
-    private DispatchCallback dispatchCallback;
-    private JoinCallback joinCallback;
-    private ShutdownCallback shutdownCallback;
+    private MilestoneCallback produceCallback;
+    private MilestoneCallback dispatchCallback;
+    private MilestoneCallback joinCallback;
+    private MilestoneCallback shutdownCallback;
 
     public boolean isDebugEnabled() {
         return debugEnabled;
@@ -21,54 +21,41 @@ public class QueueServer {
         this.debugEnabled = debugEnabled;
     }
 
-    public ProduceCallback getProduceCallback() {
+    public MilestoneCallback getProduceCallback() {
         return produceCallback;
     }
 
-    public void setProduceCallback(ProduceCallback produceCallback) {
+    public void setProduceCallback(MilestoneCallback produceCallback) {
         this.produceCallback = produceCallback;
     }
 
-    public DispatchCallback getDispatchCallback() {
+    public MilestoneCallback getDispatchCallback() {
         return dispatchCallback;
     }
 
-    public void setDispatchCallback(DispatchCallback dispatchCallback) {
+    public void setDispatchCallback(MilestoneCallback dispatchCallback) {
         this.dispatchCallback = dispatchCallback;
     }
 
-    public JoinCallback getJoinCallback() {
+    public MilestoneCallback getJoinCallback() {
         return joinCallback;
     }
 
-    public void setJoinCallback(JoinCallback joinCallback) {
+    public void setJoinCallback(MilestoneCallback joinCallback) {
         this.joinCallback = joinCallback;
     }
 
-    public ShutdownCallback getShutdownCallback() {
+    public MilestoneCallback getShutdownCallback() {
         return shutdownCallback;
     }
 
-    public void setShutdownCallback(ShutdownCallback shutdownCallback) {
+    public void setShutdownCallback(MilestoneCallback shutdownCallback) {
         this.shutdownCallback = shutdownCallback;
     }
 
-    interface ProduceCallback {
-        void postProduce(Event e);
+    interface MilestoneCallback {
+        void onMilestone(Event e);
     }
-
-    interface DispatchCallback {
-        void postDispatch(Event e);
-    }
-
-    interface JoinCallback {
-        void postJoin(Event e);
-    }
-
-    interface ShutdownCallback {
-        void preShutdown();
-    }
-
     static class Event {
         private String value;
         private String result;
@@ -170,7 +157,7 @@ public class QueueServer {
                         System.out.println(String.format("[dispatcher] dispatched event %s", ev));
                     }
                     if(dispatchCallback != null) {
-                        dispatchCallback.postDispatch(ev);
+                        dispatchCallback.onMilestone(ev);
                     }
                 } catch (InterruptedException e) {
                     e.printStackTrace();
@@ -205,7 +192,7 @@ public class QueueServer {
                         System.out.println(String.format("[joiner] joined event %s", event));
                     }
                     if(joinCallback != null) {
-                        joinCallback.postJoin(event);
+                        joinCallback.onMilestone(event);
                     }
                     gate.countDown();
                 }
@@ -235,7 +222,7 @@ public class QueueServer {
                         if(debugEnabled) {
                             System.out.println(String.format("[producer-%s] produced event %s", producer, event));
                         }
-                        if(produceCallback != null) produceCallback.postProduce(event.clone());
+                        if(produceCallback != null) produceCallback.onMilestone(event.clone());
                         TimeUnit.MICROSECONDS.sleep(ThreadLocalRandom.current().nextInt(20));
                     } catch (InterruptedException e) {
                         e.printStackTrace();
@@ -249,7 +236,7 @@ public class QueueServer {
         } catch (InterruptedException e) {
             e.printStackTrace();
         } finally {
-            if(shutdownCallback != null) shutdownCallback.preShutdown();
+            if(shutdownCallback != null) shutdownCallback.onMilestone(null);
             abWorkerService.shutdown();
             cdWorkerService.shutdown();
         }

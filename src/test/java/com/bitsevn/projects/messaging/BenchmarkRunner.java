@@ -25,7 +25,7 @@ public class BenchmarkRunner {
         @Param({ "8", "16", "32" })
         public int WORKERS;
 
-        public List<String> PRODUCERS = Arrays.asList("A:AB", "B:AB", "C:CD", "D:CD");
+        public List<String> PRODUCERS = Arrays.asList("A", "B", "C", "D");
 
         public QueueServer queueServer;
 

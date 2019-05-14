@@ -38,7 +38,7 @@ public class QueueServerTestUtil {
                 e.printStackTrace();
             }
         });
-        queueServer.setShutdownCallback(() -> {
+        queueServer.setShutdownCallback((ev) -> {
             Assert.assertEquals(totalEvents, productionQ.size());
             Assert.assertEquals(totalEvents, dispatchQ.size());
             Assert.assertEquals(totalEvents, joinerQ.size());
